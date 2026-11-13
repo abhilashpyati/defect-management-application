@@ -1,0 +1,1452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DefectGuard | Professional Defect Management System</title>
+    <!-- Bootstrap 5.3 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Custom Style -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+
+<div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="app-sidebar" id="appSidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-brand-icon">
+                <i class="bi bi-shield-check"></i>
+            </div>
+            <div class="sidebar-brand-text">
+                <h5>DefectGuard</h5>
+                <span>ST Section 1.9 Suite</span>
+            </div>
+        </div>
+
+        <div class="sidebar-menu">
+            <div class="sidebar-section-title">Navigation</div>
+            <a class="sidebar-nav-item active" data-view="dashboard" data-role-perm="Admin,Developer,Tester">
+                <i class="bi bi-grid-1x2-fill"></i>
+                <span id="navDashboardLabel">Overview Dashboard</span>
+            </a>
+            <a class="sidebar-nav-item" data-view="tracker" data-role-perm="Admin,Developer,Tester">
+                <i class="bi bi-bug-fill"></i>
+                <span id="navTrackerLabel">Defect Tracker</span>
+            </a>
+            <a class="sidebar-nav-item" data-view="report" id="navItemReport" data-role-perm="Admin,Tester">
+                <i class="bi bi-plus-circle-fill"></i>
+                <span>Report Defect</span>
+            </a>
+
+            <div class="sidebar-section-title mt-3">Subprocesses</div>
+            <a class="sidebar-nav-item" data-view="discovery" data-role-perm="Admin,Developer,Tester">
+                <i class="bi bi-funnel-fill"></i>
+                <span>Discovery Analytics</span>
+            </a>
+            <a class="sidebar-nav-item" data-view="prevention" id="navItemPrevention" data-role-perm="Admin,Tester">
+                <i class="bi bi-journal-medical"></i>
+                <span>Prevention Base</span>
+            </a>
+            <a class="sidebar-nav-item" data-view="prediction" data-role-perm="Admin,Developer,Tester">
+                <i class="bi bi-graph-up-arrow"></i>
+                <span>Defect Prediction</span>
+            </a>
+            <a class="sidebar-nav-item" data-view="reports" data-role-perm="Admin,Developer,Tester">
+                <i class="bi bi-file-earmark-bar-graph"></i>
+                <span>Reports & Export</span>
+            </a>
+        </div>
+
+        <div class="sidebar-footer">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="d-block text-white fw-bold">VII Semester ST</span>
+                    <small class="text-secondary" id="sidebarRoleTitle">Role: Admin</small>
+                </div>
+                <span class="badge bg-warning text-dark border fw-bold px-2 py-1">Demo Mode</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="app-main">
+        <!-- Topbar -->
+        <header class="app-topbar">
+            <div class="topbar-title">
+                <h4 id="currentViewTitle">Overview Dashboard</h4>
+                <span id="currentViewSubtitle">Comprehensive Defect Lifecycle & Analytics</span>
+            </div>
+            <div class="topbar-actions">
+                <!-- Role Switcher & Demo Badge -->
+                <div class="d-flex align-items-center gap-2 me-2">
+                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1 d-none d-lg-inline-block">
+                        <i class="bi bi-play-circle-fill me-1"></i> Demo Mode Active
+                    </span>
+                    <div class="d-flex align-items-center gap-1">
+                        <label for="roleSelector" class="small text-secondary fw-bold mb-0 me-1">Role:</label>
+                        <select class="form-select form-select-sm fw-bold border-primary shadow-sm" id="roleSelector" style="min-width: 125px;">
+                            <option value="Admin" selected>Admin</option>
+                            <option value="Developer">Developer</option>
+                            <option value="Tester">Tester</option>
+                        </select>
+                    </div>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace small" id="currentRoleIdentityBadge">admin@demo.com</span>
+                </div>
+
+                <button class="btn btn-sm btn-outline-secondary" id="topbarRefreshBtn" title="Refresh Data">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+                <a href="/api/export/csv" class="btn btn-sm btn-outline-primary" id="topbarExportBtn" download="defects_export.csv">
+                    <i class="bi bi-download"></i> CSV
+                </a>
+                <button class="btn btn-sm btn-primary" id="topbarNewDefectBtn">
+                    <i class="bi bi-plus-lg"></i> Report Defect
+                </button>
+                <div class="badge bg-light text-dark border px-2 py-1 ms-1 d-none d-xl-inline-block">
+                    <i class="bi bi-database text-success me-1"></i> SQLite
+                </div>
+            </div>
+        </header>
+
+        <!-- Content Views Container -->
+        <div class="app-content">
+
+            <!-- ================= VIEW 1: OVERVIEW DASHBOARD ================= -->
+            <section id="view-dashboard" class="view-section active-view">
+
+                <!-- 1A. ADMIN DASHBOARD CONTAINER -->
+                <div id="adminDashboardView">
+                    <!-- High-Risk Alert Notice Container -->
+                    <div id="dashboardAlertsContainer" class="mb-4 d-none">
+                        <div class="alert alert-warning border-warning shadow-sm d-flex align-items-center justify-content-between p-3" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-exclamation-triangle-fill fs-3 text-warning me-3"></i>
+                                <div>
+                                    <h6 class="alert-heading mb-1 fw-bold">Elevated Risk Warning</h6>
+                                    <p class="mb-0 small" id="dashboardAlertMessage">High defect concentration or critical severity detected in functional modules.</p>
+                                </div>
+                            </div>
+                            <button class="btn btn-sm btn-warning fw-bold" onclick="App.navigateTo('prediction')">Inspect Risk Details</button>
+                        </div>
+                    </div>
+
+                    <!-- Admin KPI Metric Cards -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-xl-3 col-md-6">
+                            <div class="kpi-card kpi-blue">
+                                <div class="kpi-content">
+                                    <div class="kpi-label">Total Defects</div>
+                                    <div class="kpi-value" id="kpiTotalDefects">-</div>
+                                    <div class="kpi-subtext">All recorded repository items</div>
+                                </div>
+                                <div class="kpi-icon-box"><i class="bi bi-bug"></i></div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-md-6">
+                            <div class="kpi-card kpi-amber">
+                                <div class="kpi-content">
+                                    <div class="kpi-label">Open Defects</div>
+                                    <div class="kpi-value" id="kpiOpenDefects">-</div>
+                                    <div class="kpi-subtext">New, Assigned & Reopened</div>
+                                </div>
+                                <div class="kpi-icon-box"><i class="bi bi-hourglass-split"></i></div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-md-6">
+                            <div class="kpi-card kpi-purple">
+                                <div class="kpi-content">
+                                    <div class="kpi-label">In Progress</div>
+                                    <div class="kpi-value" id="kpiInProgress">-</div>
+                                    <div class="kpi-subtext">Under active developer fix</div>
+                                </div>
+                                <div class="kpi-icon-box"><i class="bi bi-tools"></i></div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-md-6">
+                            <div class="kpi-card kpi-green">
+                                <div class="kpi-content">
+                                    <div class="kpi-label">Resolved & Verified</div>
+                                    <div class="kpi-value" id="kpiResolvedDefects">-</div>
+                                    <div class="kpi-subtext">Successfully fixed & closed</div>
+                                </div>
+                                <div class="kpi-icon-box"><i class="bi bi-check2-circle"></i></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-xl-3 col-md-6">
+                            <div class="kpi-card kpi-red">
+                                <div class="kpi-content">
+                                    <div class="kpi-label">Critical / Blocker</div>
+                                    <div class="kpi-value" id="kpiCriticalDefects">-</div>
+                                    <div class="kpi-subtext">Requires immediate intervention</div>
+                                </div>
+                                <div class="kpi-icon-box"><i class="bi bi-fire"></i></div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-md-6">
+                            <div class="kpi-card kpi-cyan">
+                                <div class="kpi-content">
+                                    <div class="kpi-label">Defect Leakage</div>
+                                    <div class="kpi-value" id="kpiLeakagePercentage">-%</div>
+                                    <div class="kpi-subtext">Post-unit testing discovery rate</div>
+                                </div>
+                                <div class="kpi-icon-box"><i class="bi bi-droplet-half"></i></div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-md-6">
+                            <div class="kpi-card kpi-blue">
+                                <div class="kpi-content">
+                                    <div class="kpi-label">Open / Resolved Ratio</div>
+                                    <div class="kpi-value" id="kpiOpenResolvedRatio">-</div>
+                                    <div class="kpi-subtext">Defect resolution velocity</div>
+                                </div>
+                                <div class="kpi-icon-box"><i class="bi bi-calculator"></i></div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-md-6">
+                            <div class="kpi-card kpi-green">
+                                <div class="kpi-content">
+                                    <div class="kpi-label">Mean Time to Resolve</div>
+                                    <div class="kpi-value" id="kpiMTTR">-</div>
+                                    <div class="kpi-subtext">Average lifecycle fix duration</div>
+                                </div>
+                                <div class="kpi-icon-box"><i class="bi bi-clock-history"></i></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Row -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-lg-4">
+                            <div class="saas-card h-100">
+                                <div class="saas-card-header">
+                                    <h6 class="saas-card-title"><i class="bi bi-pie-chart text-primary"></i> Defects by Severity</h6>
+                                </div>
+                                <div class="saas-card-body d-flex align-items-center justify-content-center" style="min-height: 280px;">
+                                    <canvas id="chartSeverity"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="saas-card h-100">
+                                <div class="saas-card-header">
+                                    <h6 class="saas-card-title"><i class="bi bi-bar-chart text-success"></i> Defects by Status</h6>
+                                </div>
+                                <div class="saas-card-body d-flex align-items-center justify-content-center" style="min-height: 280px;">
+                                    <canvas id="chartStatus"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="saas-card h-100">
+                                <div class="saas-card-header">
+                                    <h6 class="saas-card-title"><i class="bi bi-people text-primary"></i> Developer Workload Distribution</h6>
+                                </div>
+                                <div class="saas-card-body p-0">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-custom mb-0" id="adminWorkloadTable">
+                                            <thead>
+                                                <tr>
+                                                    <th>Developer</th>
+                                                    <th>Total</th>
+                                                    <th>Open</th>
+                                                    <th>Resolved</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="adminWorkloadTableBody">
+                                                <tr><td colspan="4" class="text-center py-3 text-muted">Loading workload...</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 1B. DEVELOPER DASHBOARD CONTAINER -->
+                <div id="developerDashboardView" class="d-none">
+                    <!-- Developer Welcome Banner -->
+                    <div class="alert alert-primary border-primary shadow-sm mb-4">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <h5 class="fw-bold mb-1"><i class="bi bi-code-slash text-primary me-2"></i> Developer Workspace Dashboard</h5>
+                                <p class="mb-0 small text-secondary">Logged in as <strong>developer@demo.com</strong>. Review your assigned defects, start implementation, and submit fixes.</p>
+                            </div>
+                            <span class="badge bg-primary px-3 py-2 fs-6">Developer Role</span>
+                        </div>
+                    </div>
+
+                    <!-- Developer KPI Cards -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-xl-3 col-md-6">
+                            <div class="kpi-card kpi-blue">
+                                <div class="kpi-content">
+                                    <div class="kpi-label">Assigned to Me</div>
+                                    <div class="kpi-value" id="devKpiAssigned">-</div>
+                                    <div class="kpi-subtext">Total defects assigned</div>
+                                </div>
+                                <div class="kpi-icon-box"><i class="bi bi-person-workspace"></i></div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-md-6">
+                            <div class="kpi-card kpi-amber">
+                                <div class="kpi-content">
+                                    <div class="kpi-label">New Assignments</div>
+                                    <div class="kpi-value" id="devKpiNew">-</div>
+                                    <div class="kpi-subtext">Awaiting investigation</div>
+                                </div>
+                                <div class="kpi-icon-box"><i class="bi bi-bell"></i></div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-md-6">
+                            <div class="kpi-card kpi-purple">
+                                <div class="kpi-content">
+                                    <div class="kpi-label">In Progress</div>
+                                    <div class="kpi-value" id="devKpiInProgress">-</div>
+                                    <div class="kpi-subtext">Active code development</div>
+                                </div>
+                                <div class="kpi-icon-box"><i class="bi bi-tools"></i></div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-md-6">
+                            <div class="kpi-card kpi-green">
+                                <div class="kpi-content">
+                                    <div class="kpi-label">My Resolved Fixes</div>
+                                    <div class="kpi-value" id="devKpiResolved">-</div>
+                                    <div class="kpi-subtext">Submitted for QA verification</div>
+                                </div>
+                                <div class="kpi-icon-box"><i class="bi bi-check2-all"></i></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Developer Priority Breakdown & Quick Actions -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-lg-5">
+                            <div class="saas-card h-100">
+                                <div class="saas-card-header">
+                                    <h6 class="saas-card-title"><i class="bi bi-bar-chart text-danger"></i> My Defects by Priority</h6>
+                                </div>
+                                <div class="saas-card-body d-flex align-items-center justify-content-center" style="min-height: 260px;">
+                                    <canvas id="chartDevPriority"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-7">
+                            <div class="saas-card h-100">
+                                <div class="saas-card-header d-flex justify-content-between align-items-center">
+                                    <h6 class="saas-card-title"><i class="bi bi-list-task text-primary"></i> My Assigned Tasks Queue</h6>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="App.navigateTo('tracker'); DefectsModule.filterAssignedToMe();">Open in Tracker</button>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-custom table-sm table-hover mb-0" id="devAssignedTable">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Title</th>
+                                                <th>Priority</th>
+                                                <th>Status</th>
+                                                <th class="text-end">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="devAssignedTableBody">
+                                            <tr><td colspan="5" class="text-center py-3 text-muted">Loading assigned defects...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 1C. TESTER DASHBOARD CONTAINER -->
+                <div id="testerDashboardView" class="d-none">
+                    <!-- Tester Welcome Banner -->
+                    <div class="alert alert-success border-success shadow-sm mb-4">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <h5 class="fw-bold mb-1"><i class="bi bi-patch-check text-success me-2"></i> QA Testing & Verification Dashboard</h5>
+                                <p class="mb-0 small text-secondary">Logged in as <strong>tester@demo.com</strong>. Report new defects, test resolved builds, and verify fixes or reopen regressions.</p>
+                            </div>
+                            <button class="btn btn-sm btn-success fw-bold" onclick="App.navigateTo('report')">
+                                <i class="bi bi-plus-lg"></i> Log New Defect
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tester KPI Cards -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-xl-3 col-md-6">
+                            <div class="kpi-card kpi-blue">
+                                <div class="kpi-content">
+                                    <div class="kpi-label">Reported by QA</div>
+                                    <div class="kpi-value" id="testerKpiReported">-</div>
+                                    <div class="kpi-subtext">Total logged test items</div>
+                                </div>
+                                <div class="kpi-icon-box"><i class="bi bi-clipboard-data"></i></div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-md-6">
+                            <div class="kpi-card kpi-cyan">
+                                <div class="kpi-content">
+                                    <div class="kpi-label">New Defect Reports</div>
+                                    <div class="kpi-value" id="testerKpiNew">-</div>
+                                    <div class="kpi-subtext">Awaiting Admin assignment</div>
+                                </div>
+                                <div class="kpi-icon-box"><i class="bi bi-file-earmark-plus"></i></div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-md-6">
+                            <div class="kpi-card kpi-amber">
+                                <div class="kpi-content">
+                                    <div class="kpi-label">Awaiting Verification</div>
+                                    <div class="kpi-value" id="testerKpiAwaiting">-</div>
+                                    <div class="kpi-subtext">Resolved by developer</div>
+                                </div>
+                                <div class="kpi-icon-box"><i class="bi bi-eye"></i></div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-md-6">
+                            <div class="kpi-card kpi-green">
+                                <div class="kpi-content">
+                                    <div class="kpi-label">Verified Fixes</div>
+                                    <div class="kpi-value" id="testerKpiVerified">-</div>
+                                    <div class="kpi-subtext">QA verification accepted</div>
+                                </div>
+                                <div class="kpi-icon-box"><i class="bi bi-check2-circle"></i></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Awaiting QA Verification Table -->
+                    <div class="saas-card mb-4">
+                        <div class="saas-card-header d-flex justify-content-between align-items-center">
+                            <h6 class="saas-card-title"><i class="bi bi-patch-question text-warning"></i> Resolved Defects Awaiting Verification</h6>
+                            <span class="badge bg-warning-subtle text-warning border">QA Verification Queue</span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-custom table-hover mb-0" id="testerVerificationTable">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Title</th>
+                                        <th>Module</th>
+                                        <th>Assignee</th>
+                                        <th>Resolution Notes</th>
+                                        <th>Commit Ref</th>
+                                        <th class="text-end">Verification Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="testerVerificationTableBody">
+                                    <tr><td colspan="7" class="text-center py-4 text-muted">No defects awaiting verification.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activities Stream (Shared across roles) -->
+                <div class="saas-card">
+                    <div class="saas-card-header d-flex justify-content-between align-items-center">
+                        <h6 class="saas-card-title"><i class="bi bi-clock-history text-secondary"></i> Recent Defect Lifecycle Activity Log</h6>
+                        <span class="badge bg-light text-secondary border">Audit Trail Stream</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-custom table-sm table-hover mb-0" id="sharedActivityTable">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Defect</th>
+                                    <th>Transition</th>
+                                    <th>Actor</th>
+                                    <th>Role</th>
+                                    <th>Notes / Resolution</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sharedActivityTableBody">
+                                <tr><td colspan="6" class="text-center py-3 text-muted">Loading activities...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= VIEW 2: DEFECT TRACKER ================= -->
+            <section id="view-tracker" class="view-section">
+                <!-- Filters Card -->
+                <div class="saas-card mb-3">
+                    <div class="saas-card-body py-3">
+                        <div class="row g-2 align-items-center">
+                            <div class="col-lg-3 col-md-6">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                                    <input type="text" class="form-control" id="trackerSearchInput" placeholder="Search ID, title, assignee...">
+                                </div>
+                            </div>
+                            <div class="col-lg-2 col-md-4 col-6">
+                                <select class="form-select form-select-sm" id="trackerFilterStatus">
+                                    <option value="">All Statuses</option>
+                                    <option value="NEW">New</option>
+                                    <option value="ASSIGNED">Assigned</option>
+                                    <option value="IN PROGRESS">In Progress</option>
+                                    <option value="RESOLVED">Resolved</option>
+                                    <option value="VERIFIED">Verified</option>
+                                    <option value="CLOSED">Closed</option>
+                                    <option value="REOPENED">Reopened</option>
+                                </select>
+                            </div>
+                            <div class="col-lg-2 col-md-4 col-6">
+                                <select class="form-select form-select-sm" id="trackerFilterSeverity">
+                                    <option value="">All Severities</option>
+                                    <option value="Blocker">Blocker</option>
+                                    <option value="Critical">Critical</option>
+                                    <option value="Major">Major</option>
+                                    <option value="Minor">Minor</option>
+                                    <option value="Trivial">Trivial</option>
+                                </select>
+                            </div>
+                            <div class="col-lg-2 col-md-4 col-6">
+                                <select class="form-select form-select-sm" id="trackerFilterPriority">
+                                    <option value="">All Priorities</option>
+                                    <option value="P1 – High">P1 – High</option>
+                                    <option value="P2 – Medium">P2 – Medium</option>
+                                    <option value="P3 – Low">P3 – Low</option>
+                                </select>
+                            </div>
+                            <div class="col-lg-2 col-md-4 col-6">
+                                <select class="form-select form-select-sm" id="trackerFilterModule">
+                                    <option value="">All Modules</option>
+                                    <option value="Authentication">Authentication</option>
+                                    <option value="Payments">Payments</option>
+                                    <option value="Cart & Checkout">Cart & Checkout</option>
+                                    <option value="Inventory">Inventory</option>
+                                    <option value="Notification Service">Notification Service</option>
+                                    <option value="API Gateway">API Gateway</option>
+                                </select>
+                            </div>
+                            <div class="col-lg-1 col-md-4 text-end">
+                                <button class="btn btn-sm btn-outline-secondary w-100" id="trackerResetFiltersBtn" title="Reset Filters">
+                                    <i class="bi bi-x-circle"></i> Reset
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Defects Table Card -->
+                <div class="saas-card">
+                    <div class="saas-card-header">
+                        <div class="d-flex align-items-center gap-2">
+                            <h6 class="saas-card-title mb-0"><i class="bi bi-table"></i> Defect Repository</h6>
+                            <span class="badge bg-secondary" id="trackerCountBadge">0 records</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="DefectsModule.exportFilteredCSV()">
+                                <i class="bi bi-file-earmark-spreadsheet"></i> Export Filtered CSV
+                            </button>
+                            <button class="btn btn-sm btn-primary" id="trackerReportNewBtn" onclick="App.navigateTo('report')">
+                                <i class="bi bi-plus-lg"></i> Report New Defect
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-custom table-hover" id="defectsMasterTable">
+                            <thead>
+                                <tr>
+                                    <th style="width: 110px;">Defect ID</th>
+                                    <th>Title</th>
+                                    <th>Module</th>
+                                    <th>Severity</th>
+                                    <th>Priority</th>
+                                    <th>Assignee</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th style="width: 180px;" class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="trackerTableBody">
+                                <tr><td colspan="9" class="text-center py-5 text-muted">Loading defects repository...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- Pagination Bar -->
+                    <div class="p-3 border-top d-flex align-items-center justify-content-between" id="trackerPaginationBar">
+                        <div class="small text-muted" id="trackerPaginationInfo">Showing 0 of 0 defects</div>
+                        <nav>
+                            <ul class="pagination pagination-sm mb-0" id="trackerPaginationControls"></ul>
+                        </nav>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= VIEW 3: REPORT NEW DEFECT ================= -->
+            <section id="view-report" class="view-section">
+                <div class="row justify-content-center">
+                    <div class="col-xl-9 col-lg-11">
+                        <!-- Role Alert if Developer attempts to open form -->
+                        <div id="developerReportBlockedAlert" class="alert alert-warning border-warning shadow-sm d-none mb-3">
+                            <i class="bi bi-exclamation-circle-fill text-warning me-2"></i>
+                            <strong>Developer Role Restriction:</strong> Developers cannot submit new defect reports. Please switch to the <strong>Tester</strong> or <strong>Admin</strong> role to log issues.
+                        </div>
+
+                        <div class="saas-card" id="newDefectCard">
+                            <div class="saas-card-header bg-light">
+                                <div>
+                                    <h5 class="saas-card-title mb-1"><i class="bi bi-file-earmark-plus text-primary"></i> Subprocess 3: Record New Defect</h5>
+                                    <small class="text-secondary">Mandatory server-validated defect logging form (Authorized for Tester and Admin)</small>
+                                </div>
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Auto ID: DEF-XXX</span>
+                            </div>
+                            <div class="saas-card-body p-4">
+                                <form id="newDefectForm" novalidate>
+                                    <!-- Row 1: Title -->
+                                    <div class="mb-3">
+                                        <label for="defectTitle" class="form-label fw-bold">Defect Title <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="defectTitle" required placeholder="Clear, concise summary of the issue (e.g., JWT expiration bypass on skewed clock)">
+                                        <div class="invalid-feedback">Defect title is mandatory.</div>
+                                    </div>
+
+                                    <!-- Row 2: Module, Type, Severity, Priority -->
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-md-3">
+                                            <label for="defectModule" class="form-label fw-bold">Functional Module <span class="text-danger">*</span></label>
+                                            <select class="form-select" id="defectModule" required>
+                                                <option value="" disabled selected>Select Module</option>
+                                                <option value="Authentication">Authentication</option>
+                                                <option value="Payments">Payments</option>
+                                                <option value="Cart & Checkout">Cart & Checkout</option>
+                                                <option value="Inventory">Inventory</option>
+                                                <option value="Notification Service">Notification Service</option>
+                                                <option value="API Gateway">API Gateway</option>
+                                            </select>
+                                            <div class="invalid-feedback">Module is mandatory.</div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label for="defectType" class="form-label fw-bold">Classification Type <span class="text-danger">*</span></label>
+                                            <select class="form-select" id="defectType" required>
+                                                <option value="" disabled selected>Select Type</option>
+                                                <option value="Functional">Functional</option>
+                                                <option value="UI/UX">UI/UX</option>
+                                                <option value="Backend/API">Backend/API</option>
+                                                <option value="Security">Security</option>
+                                                <option value="Database">Database</option>
+                                                <option value="Performance">Performance</option>
+                                            </select>
+                                            <div class="invalid-feedback">Classification type is mandatory.</div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label for="defectSeverity" class="form-label fw-bold">Severity (Impact) <span class="text-danger">*</span></label>
+                                            <select class="form-select" id="defectSeverity" required>
+                                                <option value="" disabled selected>Select Severity</option>
+                                                <option value="Blocker">Blocker (System Unusable)</option>
+                                                <option value="Critical">Critical (High Impact)</option>
+                                                <option value="Major">Major (Major Feature Broken)</option>
+                                                <option value="Minor">Minor (Non-critical issue)</option>
+                                                <option value="Trivial">Trivial (Cosmetic / Typo)</option>
+                                            </select>
+                                            <div class="invalid-feedback">Severity is mandatory.</div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label for="defectPriority" class="form-label fw-bold">Priority (Urgency) <span class="text-danger">*</span></label>
+                                            <select class="form-select" id="defectPriority" required>
+                                                <option value="" disabled selected>Select Priority</option>
+                                                <option value="P1 – High">P1 – High (Urgent Fix)</option>
+                                                <option value="P2 – Medium">P2 – Medium (Next Release)</option>
+                                                <option value="P3 – Low">P3 – Low (Backlog)</option>
+                                            </select>
+                                            <div class="invalid-feedback">Priority is mandatory.</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Row 3: Discovery Phase & Environment -->
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-md-3">
+                                            <label for="defectPhase" class="form-label fw-bold">Discovery Phase <span class="text-danger">*</span></label>
+                                            <select class="form-select" id="defectPhase" required>
+                                                <option value="" disabled selected>Select Phase</option>
+                                                <option value="Unit Testing">Unit Testing</option>
+                                                <option value="Integration Testing">Integration Testing</option>
+                                                <option value="System Testing">System Testing</option>
+                                                <option value="User Acceptance Testing">User Acceptance Testing</option>
+                                                <option value="Code Review">Code Review</option>
+                                                <option value="Security Audit">Security Audit</option>
+                                            </select>
+                                            <div class="invalid-feedback">Discovery phase is mandatory.</div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label for="defectEnvironment" class="form-label fw-bold">Testing Environment <span class="text-danger">*</span></label>
+                                            <select class="form-select" id="defectEnvironment" required>
+                                                <option value="" disabled selected>Select Environment</option>
+                                                <option value="Development">Development</option>
+                                                <option value="QA Staging">QA Staging</option>
+                                                <option value="Pre-Production">Pre-Production</option>
+                                                <option value="Production">Production</option>
+                                            </select>
+                                            <div class="invalid-feedback">Testing environment is mandatory.</div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label for="defectReporter" class="form-label fw-bold">Reporter Name <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="defectReporter" required placeholder="QA Engineer / Tester name">
+                                            <div class="invalid-feedback">Reporter name is mandatory.</div>
+                                        </div>
+                                        <div class="col-md-3" id="defectAssigneeContainer">
+                                            <label for="defectAssignee" class="form-label fw-bold" id="defectAssigneeLabel">Assignee Developer <span class="text-danger" id="defectAssigneeRequiredStar">*</span></label>
+                                            <input type="text" class="form-control" id="defectAssignee" placeholder="Unassigned (Only Admin can assign)">
+                                            <div class="form-text small" id="defectAssigneeHelp">Only Admin can assign defects to developers. New defects are logged as Unassigned.</div>
+                                            <div class="invalid-feedback">Assignee is mandatory.</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Row 4: Description -->
+                                    <div class="mb-3">
+                                        <label for="defectDescription" class="form-label fw-bold">Detailed Description <span class="text-danger">*</span></label>
+                                        <textarea class="form-control" id="defectDescription" rows="3" required placeholder="Provide clear technical description of the defect, symptoms, and failure mode..."></textarea>
+                                        <div class="invalid-feedback">Description is mandatory.</div>
+                                    </div>
+
+                                    <!-- Row 5: Steps to Reproduce -->
+                                    <div class="mb-3">
+                                        <label for="defectSteps" class="form-label fw-bold">Steps to Reproduce <span class="text-danger">*</span></label>
+                                        <textarea class="form-control font-monospace small" id="defectSteps" rows="3" required placeholder="1. Go to...\n2. Click on...\n3. Observe..."></textarea>
+                                        <div class="invalid-feedback">Steps to reproduce are mandatory.</div>
+                                    </div>
+
+                                    <!-- Row 6: Expected vs Actual Behavior -->
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-md-6">
+                                            <label for="defectExpected" class="form-label fw-bold">Expected Behaviour <span class="text-danger">*</span></label>
+                                            <textarea class="form-control" id="defectExpected" rows="2" required placeholder="What should happen per specifications..."></textarea>
+                                            <div class="invalid-feedback">Expected behaviour is mandatory.</div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="defectActual" class="form-label fw-bold">Actual Behaviour <span class="text-danger">*</span></label>
+                                            <textarea class="form-control" id="defectActual" rows="2" required placeholder="What actually occurred..."></textarea>
+                                            <div class="invalid-feedback">Actual behaviour is mandatory.</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Row 7: Prevention Guideline (Optional reference) -->
+                                    <div class="mb-4">
+                                        <label for="defectPrevention" class="form-label fw-bold">Associated Prevention Guideline / Root Cause Lesson (Optional)</label>
+                                        <input type="text" class="form-control" id="defectPrevention" placeholder="Reference recommended prevention practice from Subprocess 1 Knowledge Base">
+                                    </div>
+
+                                    <!-- Submit buttons -->
+                                    <div class="d-flex align-items-center justify-content-end gap-2 pt-2 border-top">
+                                        <button type="reset" class="btn btn-outline-secondary">Reset Fields</button>
+                                        <button type="submit" class="btn btn-primary px-4 fw-bold" id="submitDefectBtn">
+                                            <i class="bi bi-check-circle"></i> Save & Log Defect
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= VIEW 4: DISCOVERY ANALYTICS ================= -->
+            <section id="view-discovery" class="view-section">
+                <div class="saas-card mb-4 border-info">
+                    <div class="saas-card-body p-4 bg-light">
+                        <div class="row align-items-center">
+                            <div class="col-lg-8">
+                                <h5 class="fw-bold text-dark mb-1"><i class="bi bi-funnel-fill text-info me-2"></i> Subprocess 2: Defect Discovery & Leakage Analysis</h5>
+                                <p class="text-secondary small mb-2">Measures testing phase effectiveness by tracking when and where defects are uncovered throughout the SDLC.</p>
+                                <div class="p-3 bg-white rounded border">
+                                    <div class="fw-bold small text-uppercase text-secondary mb-1">Standard Curriculum Defect Leakage Formula:</div>
+                                    <code class="fs-6 text-primary fw-bold">Defect Leakage (%) = (Defects discovered after Unit Testing / Total Defects) × 100</code>
+                                </div>
+                            </div>
+                            <div class="col-lg-4 text-center mt-3 mt-lg-0">
+                                <div class="p-3 bg-white rounded border shadow-sm">
+                                    <span class="text-uppercase text-secondary small fw-bold d-block">Current Leakage Rate</span>
+                                    <span class="fs-1 fw-bold text-primary" id="discoveryLeakageRate">0.0%</span>
+                                    <span class="d-block text-muted small mt-1" id="discoveryLeakageSummary">0 of 0 defects post-unit</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-lg-6">
+                        <div class="saas-card h-100">
+                            <div class="saas-card-header">
+                                <h6 class="saas-card-title"><i class="bi bi-bar-chart-steps text-primary"></i> Defects Discovered per Testing Phase</h6>
+                            </div>
+                            <div class="saas-card-body">
+                                <canvas id="chartDiscoveryPhase" style="min-height: 280px;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="saas-card h-100">
+                            <div class="saas-card-header">
+                                <h6 class="saas-card-title"><i class="bi bi-hdd-network text-success"></i> Defects Discovered per Environment</h6>
+                            </div>
+                            <div class="saas-card-body">
+                                <canvas id="chartDiscoveryEnvironment" style="min-height: 280px;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="saas-card">
+                    <div class="saas-card-header">
+                        <h6 class="saas-card-title"><i class="bi bi-table"></i> Testing Phase Distribution Matrix</h6>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-custom" id="discoveryPhaseTable">
+                            <thead>
+                                <tr>
+                                    <th>Testing Phase</th>
+                                    <th>Phase Type</th>
+                                    <th>Defect Count</th>
+                                    <th>Share of Total (%)</th>
+                                    <th>Leakage Impact</th>
+                                </tr>
+                            </thead>
+                            <tbody id="discoveryPhaseTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= VIEW 5: PREVENTION KNOWLEDGE BASE ================= -->
+            <section id="view-prevention" class="view-section">
+                <div class="saas-card mb-4">
+                    <div class="saas-card-body p-4 bg-light">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                            <div>
+                                <h5 class="fw-bold text-dark mb-1"><i class="bi bi-shield-check text-success me-2"></i> Subprocess 1: Defect Prevention & Lessons Learned</h5>
+                                <p class="text-secondary small mb-0">Knowledge base cataloging root causes, architectural patterns, and reusable prevention guidelines across functional modules.</p>
+                            </div>
+                            <button class="btn btn-success fw-bold" id="openAddPreventionModalBtn">
+                                <i class="bi bi-plus-lg"></i> Add Prevention Rule
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="saas-card mb-4">
+                    <div class="saas-card-body py-3">
+                        <div class="row g-2 align-items-center">
+                            <div class="col-md-5">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                                    <input type="text" class="form-control" id="preventionSearchInput" placeholder="Search root causes, guidelines, keywords...">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <select class="form-select form-select-sm" id="preventionFilterModule">
+                                    <option value="">All Functional Modules</option>
+                                    <option value="Authentication">Authentication</option>
+                                    <option value="Payments">Payments</option>
+                                    <option value="Cart & Checkout">Cart & Checkout</option>
+                                    <option value="Inventory">Inventory</option>
+                                    <option value="Notification Service">Notification Service</option>
+                                    <option value="API Gateway">API Gateway</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <select class="form-select form-select-sm" id="preventionFilterCategory">
+                                    <option value="">All Categories</option>
+                                </select>
+                            </div>
+                            <div class="col-md-1">
+                                <button class="btn btn-sm btn-outline-secondary w-100" id="preventionResetBtn">
+                                    <i class="bi bi-arrow-counterclockwise"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3" id="preventionGridContainer"></div>
+
+                <div class="row g-3 mt-4">
+                    <div class="col-lg-6">
+                        <div class="saas-card h-100">
+                            <div class="saas-card-header">
+                                <h6 class="saas-card-title"><i class="bi bi-arrow-repeat text-danger"></i> Recurring Defect Patterns Identified</h6>
+                            </div>
+                            <div class="saas-card-body" id="preventionRecurringPatternsContainer"></div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="saas-card h-100">
+                            <div class="saas-card-header">
+                                <h6 class="saas-card-title"><i class="bi bi-lightbulb text-warning"></i> Best Practice Prevention Checklists</h6>
+                            </div>
+                            <div class="saas-card-body">
+                                <ul class="list-group list-group-flush small">
+                                    <li class="list-group-item d-flex align-items-start gap-2 px-0">
+                                        <i class="bi bi-check-circle-fill text-success mt-1"></i>
+                                        <div><strong>Authentication:</strong> Enforce non-negotiable JWT expiration tolerances, token revocation blacklist checking, and automated boundary tests.</div>
+                                    </li>
+                                    <li class="list-group-item d-flex align-items-start gap-2 px-0">
+                                        <i class="bi bi-check-circle-fill text-success mt-1"></i>
+                                        <div><strong>Payments:</strong> Require client-supplied idempotency keys on payment capture with distributed locks and fixed-point Decimal math.</div>
+                                    </li>
+                                    <li class="list-group-item d-flex align-items-start gap-2 px-0">
+                                        <i class="bi bi-check-circle-fill text-success mt-1"></i>
+                                        <div><strong>Inventory:</strong> Implement atomic SQL updates (`UPDATE inventory SET stock = stock - qty WHERE stock >= qty`) to prevent negative quantities.</div>
+                                    </li>
+                                    <li class="list-group-item d-flex align-items-start gap-2 px-0">
+                                        <i class="bi bi-check-circle-fill text-success mt-1"></i>
+                                        <div><strong>API Gateway:</strong> Enforce strict request payload size filters (10MB) and tenant-level rate limiting to guard against resource exhaustion.</div>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= VIEW 6: DEFECT PREDICTION ================= -->
+            <section id="view-prediction" class="view-section">
+                <div class="saas-card mb-4 border-primary">
+                    <div class="saas-card-body p-4 bg-light">
+                        <div class="row align-items-center">
+                            <div class="col-lg-8">
+                                <span class="badge bg-primary text-white mb-2">Subprocess 6: Rule-Based Prediction Engine</span>
+                                <h5 class="fw-bold text-dark mb-1">Module Risk Score & Defect Concentration Model</h5>
+                                <p class="text-secondary small mb-2">A transparent mathematical scoring model implementing curriculum Section 1.9 severity weights.</p>
+                                <div class="p-2 bg-white rounded border small">
+                                    <span class="fw-bold">Curriculum Formula:</span>
+                                    <code>Module Risk Score = (3 × Blocker/Critical) + (2 × Major) + (1 × Minor) + (0 × Trivial)</code>
+                                </div>
+                            </div>
+                            <div class="col-lg-4 text-center mt-3 mt-lg-0">
+                                <div class="p-3 bg-white rounded border shadow-sm" id="highestRiskShowcase">
+                                    <span class="text-uppercase text-secondary small fw-bold d-block">Highest-Risk Module</span>
+                                    <span class="fs-2 fw-bold text-danger" id="predHighestRiskModule">-</span>
+                                    <span class="badge bg-danger mt-1" id="predHighestRiskScore">Score: -</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="saas-card mb-4">
+                    <div class="saas-card-header">
+                        <h6 class="saas-card-title"><i class="bi bi-trophy text-danger"></i> Ranked Functional Modules by Risk Score</h6>
+                        <span class="badge bg-light text-dark border">Weighted Severity Ranking</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-custom" id="predictionRankingTable">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Module Name</th>
+                                    <th>Risk Score</th>
+                                    <th>Risk Level</th>
+                                    <th>Blocker / Critical (×3)</th>
+                                    <th>Major (×2)</th>
+                                    <th>Minor (×1)</th>
+                                    <th>Total Defects</th>
+                                    <th>Defect Concentration (%)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="predictionRankingTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="saas-card mb-4">
+                    <div class="saas-card-header">
+                        <h6 class="saas-card-title"><i class="bi bi-shield-exclamation text-warning"></i> Automated High-Risk Alerts</h6>
+                    </div>
+                    <div class="saas-card-body" id="predictionAlertsContainer"></div>
+                </div>
+
+                <div class="saas-card">
+                    <div class="saas-card-header">
+                        <h6 class="saas-card-title"><i class="bi bi-clipboard2-check text-success"></i> Recommended Regression Testing Focus Areas</h6>
+                    </div>
+                    <div class="saas-card-body" id="predictionRecommendationsContainer"></div>
+                </div>
+            </section>
+
+            <!-- ================= VIEW 7: REPORTS & EXPORT ================= -->
+            <section id="view-reports" class="view-section">
+                <div class="row g-4">
+                    <div class="col-lg-4">
+                        <div class="saas-card h-100">
+                            <div class="saas-card-header">
+                                <h6 class="saas-card-title"><i class="bi bi-file-earmark-spreadsheet text-success"></i> Data Export (CSV)</h6>
+                            </div>
+                            <div class="saas-card-body d-flex flex-column justify-content-between">
+                                <p class="text-secondary small">Download full defect dataset including all 22 database attributes, reproduction steps, resolution notes, and audit timestamps.</p>
+                                <div class="bg-light p-3 rounded mb-3 small">
+                                    <div><strong>Format:</strong> RFC 4180 CSV</div>
+                                    <div><strong>Encoding:</strong> UTF-8</div>
+                                    <div><strong>Includes:</strong> All active & historical records</div>
+                                </div>
+                                <a href="/api/export/csv" class="btn btn-success w-100 fw-bold" download="defects_export.csv">
+                                    <i class="bi bi-download me-1"></i> Download Defects CSV
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-8">
+                        <div class="saas-card h-100">
+                            <div class="saas-card-header d-flex align-items-center justify-content-between">
+                                <h6 class="saas-card-title"><i class="bi bi-printer text-primary"></i> Printable Defect Management Executive Summary</h6>
+                                <button class="btn btn-sm btn-outline-primary" onclick="window.print()">
+                                    <i class="bi bi-printer-fill me-1"></i> Print / Save as PDF
+                                </button>
+                            </div>
+                            <div class="saas-card-body p-4 bg-white" id="printableReportSheet">
+                                <div class="border p-4 rounded bg-white">
+                                    <div class="d-flex justify-content-between border-bottom pb-3 mb-3">
+                                        <div>
+                                            <h4 class="fw-bold mb-0 text-primary">DEFECT MANAGEMENT EXECUTIVE SUMMARY</h4>
+                                            <small class="text-secondary">Software Testing Assignment Report | Section 1.9 Standard</small>
+                                        </div>
+                                        <div class="text-end small text-muted">
+                                            <div>Generated: <span id="reportPrintDate">-</span></div>
+                                            <div>Status: Complete Application</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row g-3 mb-3 text-center">
+                                        <div class="col-3 p-2 border rounded bg-light">
+                                            <small class="text-secondary d-block">Total Defects</small>
+                                            <span class="fw-bold fs-5" id="repPrintTotal">-</span>
+                                        </div>
+                                        <div class="col-3 p-2 border rounded bg-light">
+                                            <small class="text-secondary d-block">Open</small>
+                                            <span class="fw-bold fs-5 text-warning" id="repPrintOpen">-</span>
+                                        </div>
+                                        <div class="col-3 p-2 border rounded bg-light">
+                                            <small class="text-secondary d-block">Resolved</small>
+                                            <span class="fw-bold fs-5 text-success" id="repPrintResolved">-</span>
+                                        </div>
+                                        <div class="col-3 p-2 border rounded bg-light">
+                                            <small class="text-secondary d-block">Defect Leakage</small>
+                                            <span class="fw-bold fs-5 text-danger" id="repPrintLeakage">-%</span>
+                                        </div>
+                                    </div>
+
+                                    <h6 class="fw-bold text-dark mt-4 mb-2">Module Risk Evaluation Summary:</h6>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-bordered small">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Module</th>
+                                                    <th>Risk Score</th>
+                                                    <th>Risk Level</th>
+                                                    <th>Blocker/Critical</th>
+                                                    <th>Major</th>
+                                                    <th>Minor</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="reportPrintTableBody"></tbody>
+                                        </table>
+                                    </div>
+                                    <div class="mt-3 small text-muted">
+                                        * Calculated according to rule-based weighted severity formula: Score = (3 × Blocker/Critical) + (2 × Major) + (1 × Minor).
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+</div>
+
+<!-- ================= MODALS ================= -->
+
+<!-- 1. VIEW DEFECT DETAILS MODAL -->
+<div class="modal fade" id="modalViewDefect" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <span class="badge bg-primary me-2 font-monospace" id="modalDefectCodeBadge">DEF-XXX</span>
+                    <h5 class="modal-title d-inline-block" id="modalDefectTitle">Defect Title</h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <ul class="nav nav-tabs nav-fill bg-light px-3 pt-2" id="defectDetailTabs" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link active fw-bold small" id="tab-overview-btn" data-bs-toggle="tab" data-bs-target="#tab-overview">Overview & Classification</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link fw-bold small" id="tab-steps-btn" data-bs-toggle="tab" data-bs-target="#tab-steps">Reproduction & Behavior</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link fw-bold small" id="tab-history-btn" data-bs-toggle="tab" data-bs-target="#tab-history">Lifecycle History & Audit</button>
+                    </li>
+                </ul>
+
+                <div class="tab-content p-4">
+                    <!-- Tab 1: Overview -->
+                    <div class="tab-pane fade show active" id="tab-overview">
+                        <div class="row g-3 mb-3">
+                            <div class="col-sm-6 col-md-3">
+                                <small class="text-secondary d-block">Status</small>
+                                <span id="modalDetailStatus" class="badge-status badge-status-new">NEW</span>
+                            </div>
+                            <div class="col-sm-6 col-md-3">
+                                <small class="text-secondary d-block">Severity (Impact)</small>
+                                <span id="modalDetailSeverity" class="badge-severity badge-sev-critical">Critical</span>
+                            </div>
+                            <div class="col-sm-6 col-md-3">
+                                <small class="text-secondary d-block">Priority (Urgency)</small>
+                                <span id="modalDetailPriority" class="badge-prio badge-prio-high">P1 – High</span>
+                            </div>
+                            <div class="col-sm-6 col-md-3">
+                                <small class="text-secondary d-block">Module</small>
+                                <span id="modalDetailModule" class="fw-bold">Authentication</span>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3 border-top pt-3">
+                            <div class="col-sm-6 col-md-3">
+                                <small class="text-secondary d-block">Defect Type</small>
+                                <span id="modalDetailType" class="fw-medium">Security</span>
+                            </div>
+                            <div class="col-sm-6 col-md-3">
+                                <small class="text-secondary d-block">Discovery Phase</small>
+                                <span id="modalDetailPhase" class="fw-medium">Security Audit</span>
+                            </div>
+                            <div class="col-sm-6 col-md-3">
+                                <small class="text-secondary d-block">Environment</small>
+                                <span id="modalDetailEnvironment" class="fw-medium">QA Staging</span>
+                            </div>
+                            <div class="col-sm-6 col-md-3">
+                                <small class="text-secondary d-block">Assignee Developer</small>
+                                <span id="modalDetailAssignee" class="fw-bold text-primary">Sam Dev</span>
+                            </div>
+                            <div class="col-sm-6 col-md-3">
+                                <small class="text-secondary d-block">Verification Assignee (QA)</small>
+                                <span id="modalDetailVerificationAssignee" class="fw-bold text-success">Unassigned</span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3 border-top pt-3">
+                            <label class="fw-bold small text-secondary">Description</label>
+                            <p class="mb-0 bg-light p-3 rounded" id="modalDetailDescription">-</p>
+                        </div>
+
+                        <!-- Distinct Lifecycle Notes -->
+                        <div class="row g-2 mb-3 border-top pt-3">
+                            <div class="col-md-6">
+                                <label class="fw-bold small text-secondary">Investigation Notes</label>
+                                <div class="bg-light p-2 rounded small text-dark" id="modalDetailInvestigation">-</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="fw-bold small text-success">Resolution Notes</label>
+                                <div class="bg-light p-2 rounded small text-dark" id="modalDetailResolution">-</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="fw-bold small text-primary">Verification Notes</label>
+                                <div class="bg-light p-2 rounded small text-dark" id="modalDetailVerification">-</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="fw-bold small text-danger">Reopening Reason</label>
+                                <div class="bg-light p-2 rounded small text-danger" id="modalDetailReopeningReason">-</div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-2 small text-muted border-top pt-2">
+                            <div class="col-md-6">Reporter: <strong id="modalDetailReporter">-</strong></div>
+                            <div class="col-md-6">Created At: <span id="modalDetailCreated">-</span></div>
+                            <div class="col-md-6">Resolved At: <span id="modalDetailResolved">-</span></div>
+                            <div class="col-md-6">Commit Reference: <code id="modalDetailCommit">-</code></div>
+                        </div>
+                    </div>
+
+                    <!-- Tab 2: Reproduction & Behavior -->
+                    <div class="tab-pane fade" id="tab-steps">
+                        <div class="mb-3">
+                            <label class="fw-bold small text-secondary">Steps to Reproduce</label>
+                            <pre class="bg-light p-3 rounded small font-monospace" style="white-space: pre-wrap;" id="modalDetailSteps">-</pre>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="fw-bold small text-success">Expected Behaviour</label>
+                                <div class="bg-light p-3 rounded small border-start border-success border-3" id="modalDetailExpected">-</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="fw-bold small text-danger">Actual Behaviour</label>
+                                <div class="bg-light p-3 rounded small border-start border-danger border-3" id="modalDetailActual">-</div>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <label class="fw-bold small text-secondary">Associated Prevention Guideline</label>
+                            <div class="bg-light p-3 rounded small" id="modalDetailPrevention">-</div>
+                        </div>
+                    </div>
+
+                    <!-- Tab 3: Lifecycle History -->
+                    <div class="tab-pane fade" id="tab-history">
+                        <div class="timeline" id="modalHistoryTimeline"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer d-flex justify-content-between">
+                <div>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="window.print()">
+                        <i class="bi bi-printer"></i> Print Sheet
+                    </button>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-outline-primary" id="modalViewEditBtn">
+                        <i class="bi bi-pencil"></i> Edit Details
+                    </button>
+                    <button class="btn btn-sm btn-primary" id="modalViewTransitionBtn">
+                        <i class="bi bi-arrow-repeat"></i> Update Lifecycle
+                    </button>
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 2. LIFECYCLE TRANSITION MODAL (Role-Aware State Machine) -->
+<div class="modal fade" id="modalLifecycleTransition" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title mb-0"><i class="bi bi-arrow-repeat text-primary me-2"></i> Update Lifecycle State</h5>
+                    <small class="text-secondary" id="lifecycleModalSubtitle">Defect DEF-XXX</small>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="lifecycleTransitionForm">
+                    <input type="hidden" id="lifecycleDefectId">
+
+                    <!-- Role context banner -->
+                    <div class="alert alert-light border small py-2 px-3 mb-3 d-flex justify-content-between align-items-center">
+                        <span>Acting Role: <strong id="lifecycleActingRoleLabel" class="text-primary">Admin</strong></span>
+                        <span id="lifecycleCurrentStatusBadge" class="badge-status badge-status-new">NEW</span>
+                    </div>
+
+                    <!-- Allowed Next Status (Role-Aware) -->
+                    <div class="mb-3">
+                        <label for="lifecycleNextStatus" class="form-label fw-bold">Next Allowed Status <span class="text-danger">*</span></label>
+                        <select class="form-select" id="lifecycleNextStatus" required></select>
+                        <div class="form-text small" id="lifecycleAllowedHelp">State transitions are enforced per Section 1.9 curriculum rules and role permissions.</div>
+                    </div>
+
+                    <!-- Reassign Developer (Admin only field) -->
+                    <div class="mb-3" id="lifecycleAssigneeContainer">
+                        <label for="lifecycleAssignee" class="form-label fw-bold">Assignee Developer</label>
+                        <input type="text" class="form-control" id="lifecycleAssignee" placeholder="e.g. developer@demo.com or Dev Name">
+                        <div class="form-text small text-muted">Only Admin can assign or change developer assignments.</div>
+                    </div>
+
+                    <!-- Assign QA Verification Assignee (Admin only field) -->
+                    <div class="mb-3" id="lifecycleVerificationAssigneeContainer">
+                        <label for="lifecycleVerificationAssignee" class="form-label fw-bold">QA Verification Assignee</label>
+                        <input type="text" class="form-control" id="lifecycleVerificationAssignee" placeholder="e.g. tester@demo.com">
+                        <div class="form-text small text-muted">Only Admin can assign or change QA verification assignees.</div>
+                    </div>
+
+                    <!-- Resolution Notes / Technical Fix Description -->
+                    <div class="mb-3">
+                        <label for="lifecycleNotes" class="form-label fw-bold" id="lifecycleNotesLabel">Resolution Notes / Description</label>
+                        <textarea class="form-control" id="lifecycleNotes" rows="2" placeholder="Investigation details, technical fix rationale, or verification comments..."></textarea>
+                    </div>
+
+                    <!-- Commit Reference (Developer/Admin field) -->
+                    <div class="mb-3" id="lifecycleCommitContainer">
+                        <label for="lifecycleCommit" class="form-label fw-bold">Git Commit Reference (Optional)</label>
+                        <input type="text" class="form-control font-monospace" id="lifecycleCommit" placeholder="e.g. commit 8f2b1a9c">
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 pt-2 border-top">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="lifecycleSubmitBtn">Confirm Transition</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 3. EDIT DEFECT MODAL -->
+<div class="modal fade" id="modalEditDefect" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-pencil-square text-primary me-2"></i> Edit Defect Information</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editDefectForm">
+                    <input type="hidden" id="editDefectId">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Title</label>
+                        <input type="text" class="form-control" id="editDefectTitle" required>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Module</label>
+                            <select class="form-select" id="editDefectModule">
+                                <option value="Authentication">Authentication</option>
+                                <option value="Payments">Payments</option>
+                                <option value="Cart & Checkout">Cart & Checkout</option>
+                                <option value="Inventory">Inventory</option>
+                                <option value="Notification Service">Notification Service</option>
+                                <option value="API Gateway">API Gateway</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3" id="editSeverityCol">
+                            <label class="form-label fw-bold">Severity</label>
+                            <select class="form-select" id="editDefectSeverity">
+                                <option value="Blocker">Blocker</option>
+                                <option value="Critical">Critical</option>
+                                <option value="Major">Major</option>
+                                <option value="Minor">Minor</option>
+                                <option value="Trivial">Trivial</option>
+                            </select>
+                            <div class="form-text small text-muted" id="editSeverityHelp"></div>
+                        </div>
+                        <div class="col-md-3" id="editPriorityCol">
+                            <label class="form-label fw-bold">Priority</label>
+                            <select class="form-select" id="editDefectPriority">
+                                <option value="P1 – High">P1 – High</option>
+                                <option value="P2 – Medium">P2 – Medium</option>
+                                <option value="P3 – Low">P3 – Low</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3" id="editAssigneeCol">
+                            <label class="form-label fw-bold">Assignee Developer</label>
+                            <input type="text" class="form-control" id="editDefectAssignee" required>
+                            <div class="form-text small text-muted" id="editAssigneeHelp"></div>
+                        </div>
+                        <div class="col-md-3" id="editVerAssigneeCol">
+                            <label class="form-label fw-bold">QA Verification Assignee</label>
+                            <input type="text" class="form-control" id="editDefectVerificationAssignee" placeholder="e.g. tester@demo.com">
+                            <div class="form-text small text-muted" id="editVerAssigneeHelp"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Description</label>
+                        <textarea class="form-control" id="editDefectDescription" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Steps to Reproduce</label>
+                        <textarea class="form-control font-monospace small" id="editDefectSteps" rows="2"></textarea>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Expected Behaviour</label>
+                            <textarea class="form-control" id="editDefectExpected" rows="2"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Actual Behaviour</label>
+                            <textarea class="form-control" id="editDefectActual" rows="2"></textarea>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2 pt-2 border-top">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="editDefectSubmitBtn">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 4. ADD / EDIT PREVENTION GUIDELINE MODAL -->
+<div class="modal fade" id="modalPreventionGuideline" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="preventionModalTitle">Record Prevention Guideline</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="preventionGuidelineForm">
+                    <input type="hidden" id="preventionGuidelineId">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Functional Module <span class="text-danger">*</span></label>
+                        <select class="form-select" id="preventionFormModule" required>
+                            <option value="Authentication">Authentication</option>
+                            <option value="Payments">Payments</option>
+                            <option value="Cart & Checkout">Cart & Checkout</option>
+                            <option value="Inventory">Inventory</option>
+                            <option value="Notification Service">Notification Service</option>
+                            <option value="API Gateway">API Gateway</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Category</label>
+                        <input type="text" class="form-control" id="preventionFormCategory" placeholder="e.g. Security & Authorization, Concurrency">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Root Cause Description <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="preventionFormRootCause" rows="2" required placeholder="What was the core underlying issue?"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Prevention Guideline & Best Practice <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="preventionFormGuideline" rows="3" required placeholder="What engineering rule prevents recurrence?"></textarea>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2 pt-2 border-top">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success">Save Guideline</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 5. CONFIRM DELETE MODAL -->
+<div class="modal fade" id="modalConfirmDelete" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header bg-danger-subtle">
+                <h6 class="modal-title text-danger fw-bold"><i class="bi bi-trash"></i> Confirm Deletion</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center p-4">
+                <p class="mb-1" id="deleteConfirmMessage">Are you sure you want to permanently delete this defect?</p>
+                <small class="text-muted">This action will also purge its lifecycle audit log.</small>
+            </div>
+            <div class="modal-footer d-flex justify-content-center">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-sm btn-danger fw-bold" id="confirmDeleteSubmitBtn">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notification Container -->
+<div class="toast-container position-fixed top-0 end-0 p-3" id="toastContainer" style="z-index: 1100;"></div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script src="{{ url_for('static', filename='js/defects.js') }}"></script>
+<script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
+<script src="{{ url_for('static', filename='js/prevention.js') }}"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        App.init();
+    });
+</script>
+</body>
+</html>
